@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Ward Expense Management — Interactive Demo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;}
+body{background:#F3F4F6;font-size:12px;}
+.demo-banner{background:#1a1a1a;color:#fff;text-align:center;padding:7px 16px;font-size:11px;}
+.demo-banner span{color:#1D9E75;font-weight:700;}
+.tab-bar{display:flex;border-bottom:2px solid #E5E7EB;background:#fff;}
+.tab{padding:10px 24px;font-size:13px;cursor:pointer;color:#6B7280;border-bottom:3px solid transparent;margin-bottom:-2px;font-weight:500;}
+.tab:hover{color:#111;}
+.tab.active-guardian{color:#0C447C;border-bottom-color:#1D9E75;}
+.tab.active-court{color:#534AB7;border-bottom-color:#534AB7;}
+.tab-badge{background:#FAEEDA;color:#854F0B;border-radius:99px;padding:1px 7px;font-size:10px;margin-left:6px;}
+.tab-badge-purple{background:#EEEDFE;color:#3C3489;border-radius:99px;padding:1px 7px;font-size:10px;margin-left:6px;}
+.pane{display:none;}.pane.active{display:block;}
+.notif{position:fixed;top:16px;right:16px;z-index:9999;max-width:340px;border-radius:10px;padding:12px 16px;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,0.18);animation:slideIn 0.3s ease;display:none;}
+.notif.show{display:block;}
+.notif-approve{background:#EAF3DE;border:1px solid #C0DD97;color:#27500A;}
+.notif-deny{background:#FCEBEB;border:1px solid #F7C1C1;color:#791F1F;}
+.notif-hearing{background:#EEEDFE;border:1px solid #AFA9EC;color:#3C3489;}
+.notif-info{background:#E6F1FB;border:1px solid #B5D4F4;color:#0C447C;}
+.notif-title{font-weight:700;margin-bottom:3px;font-size:13px;}
+@keyframes slideIn{from{transform:translateX(60px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+@keyframes flashRow{0%{background:#FFF176;}60%{background:#FFFDE7;}100%{background:inherit;}}
+.flash{animation:flashRow 2.5s ease;}
+.g-header{background:#fff;border-bottom:1px solid #E5E7EB;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;}
+.g-header h1{font-size:15px;font-weight:700;color:#111;}
+.g-header p{font-size:10px;color:#6B7280;}
+.g-ward-bar{background:#fff;border-bottom:1px solid #E5E7EB;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;}
+.g-ward-name{font-size:20px;font-weight:700;color:#111;}
+.g-ward-case{font-size:11px;color:#6B7280;margin-top:2px;}
+.g-ward-btns{display:flex;gap:8px;align-items:center;}
+.btn-green{background:#1D9E75;color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:12px;cursor:pointer;font-weight:600;}
+.btn-green:hover{background:#178a66;}
+.btn-outline{background:#fff;border:1px solid #D1D5DB;border-radius:6px;padding:6px 12px;font-size:11px;color:#111;cursor:pointer;}
+.btn-dark{background:#111;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;}
+.g-page{padding:14px 20px;display:flex;flex-direction:column;gap:12px;}
+.g-card{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:14px;}
+.g-card-title{font-size:13px;font-weight:700;color:#111;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center;}
+.budget-grid{display:flex;gap:10px;flex-wrap:wrap;}
+.bcard{border-radius:8px;padding:12px 14px;flex:1;min-width:180px;max-width:32%;}
+.bcard-teal{background:#E1F5EE;border:1px solid #9FE1CB;}
+.bcard-blue{background:#E6F1FB;border:1px solid #B5D4F4;}
+.bcard-purple{background:#EEEDFE;border:1px solid #CECBF6;}
+.bcard-amber{background:#FAEEDA;border:1px solid #FAC775;}
+.bcard-name{font-size:13px;font-weight:700;}
+.bcard-desc{font-size:10px;line-height:1.4;margin:4px 0;}
+.bcard-hr{border:none;border-top:1px solid;margin:5px 0;}
+.bcard-meta{display:flex;justify-content:space-between;font-size:11px;font-weight:700;}
+.teal-d{color:#085041;}.teal-m{color:#0F6E56;}.teal-b{border-color:#9FE1CB;}
+.blue-d{color:#0C447C;}.blue-m{color:#185FA5;}.blue-b{border-color:#B5D4F4;}
+.pur-d{color:#3C3489;}.pur-m{color:#534AB7;}.pur-b{border-color:#CECBF6;}
+.amb-d{color:#633806;}.amb-m{color:#854F0B;}.amb-b{border-color:#FAC775;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{text-align:left;font-size:10px;color:#6B7280;padding:5px 8px;border-bottom:1px solid #E5E7EB;white-space:nowrap;cursor:pointer;user-select:none;}
+th:hover{color:#111;}
+td{padding:8px 8px;border-bottom:1px solid #F3F4F6;color:#111;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.clickable-row{cursor:pointer;}
+.clickable-row:hover td{background:#F0F7FF;}
+.selected-row td{background:#EFF6FF!important;border-left:3px solid #378ADD;}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;}
+.b-pending{background:#FAEEDA;color:#633806;}
+.b-filed{background:#E1D9F8;color:#3C3489;}
+.b-approved{background:#EAF3DE;color:#27500A;}
+.b-denied{background:#FCEBEB;color:#791F1F;}
+.b-hearing{background:#EEEDFE;color:#3C3489;}
+.b-info{background:#E6F1FB;color:#0C447C;}
+.b-paid{background:#F1EFE8;color:#5F5E5A;}
+.b-new{background:#E1D9F8;color:#3C3489;}
+.updated-pill{font-size:10px;color:#854F0B;font-weight:600;background:#FFF9C4;padding:1px 6px;border-radius:4px;margin-left:4px;border:1px solid #F5D87A;}
+.act-btn{background:none;border:1px solid #E5E7EB;border-radius:4px;padding:2px 7px;font-size:10px;cursor:pointer;color:#6B7280;margin-right:2px;}
+.send-btn{background:#0C447C;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:600;}
+.send-btn:hover{background:#185FA5;}
+.desc-c{font-size:10px;color:#6B7280;max-width:160px;}
+.court-note{font-size:10px;color:#0C447C;margin-top:3px;font-style:italic;background:#E6F1FB;padding:2px 6px;border-radius:4px;display:inline-block;}
+.hearing-date-cell{font-size:10px;color:#534AB7;font-weight:600;margin-top:2px;}
+.filed-row td{background:#F5F3FF!important;}
+.denied-row td{background:#FFF5F5!important;}
+.hearing-row-g td{background:#F5F3FF!important;}
+.info-row td{background:#EFF6FF!important;}
+.c-header{background:#0C447C;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;}
+.c-title{color:#fff;font-size:15px;font-weight:700;}
+.c-sub{color:#B5D4F4;font-size:10px;margin-top:2px;}
+.c-user{background:#185FA5;border-radius:99px;padding:4px 12px;font-size:11px;color:#E6F1FB;}
+.live-badge{background:#EAF3DE;color:#27500A;border-radius:99px;padding:3px 9px;font-size:10px;font-weight:600;}
+.dot{width:6px;height:6px;border-radius:50%;background:#639922;display:inline-block;margin-right:4px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.c-stats{background:#185FA5;padding:8px 20px;display:flex;}
+.cstat{text-align:center;padding:5px 14px;border-right:1px solid #378ADD;}
+.cstat:last-child{border-right:none;}
+.cstat-n{font-size:18px;font-weight:600;color:#fff;}
+.cstat-l{font-size:9px;color:#B5D4F4;margin-top:2px;}
+.cstat-h .cstat-n{color:#AFA9EC;}
+.cstat-u .cstat-n{color:#FAC775;}
+.c-page{padding:14px 20px;display:flex;flex-direction:column;gap:12px;}
+.c-card{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:14px;}
+.c-card-title{font-size:13px;font-weight:700;color:#111;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center;}
+.filter-bar{display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}
+.fb{background:#F3F4F6;border:1px solid #E5E7EB;border-radius:99px;padding:3px 10px;font-size:10px;color:#6B7280;cursor:pointer;}
+.fb:hover{background:#E5E7EB;}
+.fb-active{background:#E6F1FB;border-color:#378ADD;color:#0C447C;font-weight:600;}
+.fb-hearing{background:#EEEDFE;border-color:#7F77DD;color:#3C3489;}
+.g-cell{font-weight:600;font-size:11px;}
+.g-sub{font-size:9px;color:#6B7280;}
+.c-new-row td{background:#EFF6FF;}
+.c-hearing-row td{background:#F5F3FF;}
+.detail-panel-wrap{background:#F0F7FF;border:1.5px solid #378ADD;border-radius:10px;padding:16px;animation:fadeIn 0.2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.detail-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #B5D4F4;}
+.detail-ward{font-size:15px;font-weight:700;color:#0C447C;}
+.detail-sub{font-size:10px;color:#185FA5;margin-top:2px;}
+.detail-close{background:none;border:none;font-size:16px;cursor:pointer;color:#185FA5;padding:2px 8px;border-radius:4px;}
+.detail-close:hover{background:#B5D4F4;}
+.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.detail-item{background:#fff;border-radius:6px;padding:8px 10px;border:1px solid #B5D4F4;}
+.detail-label{font-size:9px;color:#6B7280;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.3px;}
+.detail-value{font-size:13px;font-weight:600;color:#111;}
+.detail-desc{grid-column:1/-1;}
+.detail-desc .detail-value{font-size:12px;font-weight:400;color:#374151;}
+.detail-actions-row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;}
+.big-approve{background:#1D9E75;color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;}
+.big-approve:hover{background:#178a66;}
+.big-deny{background:#E24B4A;color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;}
+.big-deny:hover{background:#c53939;}
+.big-hearing{background:#534AB7;color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;}
+.big-hearing:hover{background:#3c3489;}
+.big-info{background:#fff;color:#0C447C;border:1.5px solid #378ADD;border-radius:6px;padding:9px 18px;font-size:13px;cursor:pointer;}
+.big-info:hover{background:#E6F1FB;}
+.note-area{flex:1;min-width:240px;}
+.note-input{width:100%;border:1px solid #B5D4F4;border-radius:6px;padding:7px 10px;font-size:12px;resize:none;background:#fff;color:#111;}
+.note-input:focus{outline:none;border-color:#378ADD;}
+.hearing-date-row{display:flex;gap:8px;align-items:center;padding:8px 10px;background:#EEEDFE;border-radius:6px;border:1px solid #AFA9EC;margin-top:4px;}
+.hearing-date-input{border:1px solid #7F77DD;border-radius:6px;padding:5px 10px;font-size:12px;background:#fff;color:#3C3489;width:200px;}
+.hearing-hint{font-size:10px;color:#534AB7;}
+.completed-notice{background:#EAF3DE;border:1px solid #C0DD97;border-radius:6px;padding:10px 14px;color:#27500A;font-size:12px;}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:12px;padding:20px;width:480px;max-width:95vw;}
+.modal-title{font-size:14px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center;}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#6B7280;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-full{grid-column:1/-1;}
+.form-label{font-size:10px;color:#6B7280;margin-bottom:4px;display:block;}
+.form-input{width:100%;border:1px solid #D1D5DB;border-radius:6px;padding:6px 8px;font-size:12px;color:#111;}
+.form-input:focus{outline:none;border-color:#1D9E75;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #E5E7EB;}
+.ward-option{padding:10px 12px;border:1px solid #E5E7EB;border-radius:8px;cursor:pointer;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
+.ward-option:hover{background:#F0FDF4;border-color:#1D9E75;}
+.ward-option.current{background:#E1F5EE;border-color:#9FE1CB;}
+.new-budget-badge{background:#E1F5EE;border:1px solid #9FE1CB;color:#085041;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle;}
+.status-wrap{position:relative;display:inline-block;}
+.status-btn{cursor:pointer;border:none;background:none;padding:0;display:inline-flex;align-items:center;gap:3px;}
+.status-btn:after{content:'▾';font-size:9px;color:#9CA3AF;}
+.status-btn:hover .badge{opacity:0.8;transform:scale(1.03);}
+.status-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:500;min-width:170px;padding:4px;}
+.status-dropdown.open{display:block;}
+.status-option{padding:6px 10px;border-radius:5px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:6px;}
+.status-option:hover{background:#F3F4F6;}
+.status-option.current{background:#F0FDF4;font-weight:600;}
+.status-option .dot-indicator{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="demo-banner"><span>INTERACTIVE DEMO</span> — Ward Expense Management v2 + Franklin County Court Portal &nbsp;|&nbsp; All data is simulated. Nothing is stored or transmitted.</div>
+<div id="notif" class="notif"></div>
+<div class="tab-bar">
+  <div class="tab active-guardian" id="tab-g" onclick="showTab('g')">&#9878; Guardian App — Gasper Legal <span class="tab-badge" id="pending-badge">3 pending</span></div>
+  <div class="tab" id="tab-c" onclick="showTab('c')">&#127963; Court Portal — Franklin County Probate <span class="tab-badge-purple" id="court-badge">2 new</span></div>
+</div>
+
+<!-- GUARDIAN PANE -->
+<div id="pane-g" class="pane active">
+  <div class="g-header">
+    <div><h1>Ward Expense Management</h1><p>Tracking, managing, and preparing text for Form 15.7</p></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-outline" onclick="showAllPending()">All Pending <span id="all-pending-count" class="tab-badge">3</span></button>
+      <button class="btn-outline">Sign out</button>
+    </div>
+  </div>
+  <div class="g-ward-bar">
+    <div><div class="g-ward-name" id="ward-display-name">Heath, Jaqueline</div><div class="g-ward-case" id="ward-display-case">Case #: 637347</div></div>
+    <div class="g-ward-btns">
+      <button class="btn-green" onclick="openAddBill()">+ Add New Bill</button>
+      <button class="btn-outline" onclick="openSwitchWard()">Switch ward</button>
+      <button class="btn-dark" onclick="openAddWard()">+ Add new ward</button>
+    </div>
+  </div>
+  <div class="g-page">
+    <div class="g-card">
+      <div class="g-card-title">Current budget items <span style="font-size:10px;color:#6B7280;font-weight:400;">Approved items appear here automatically</span></div>
+      <div id="budget-grid" class="budget-grid"></div>
+    </div>
+    <div class="g-card">
+      <div class="g-card-title"><span>Pending application</span><button class="send-btn" onclick="sendToCourt()">Send to court &#10145;</button></div>
+      <p style="font-size:10px;color:#6B7280;margin-bottom:8px;">All items remain here until court approves. Status updates in real time.</p>
+      <table><thead><tr><th style="width:20px;"></th><th>Payee</th><th>Amount</th><th>Amt type</th><th>Date</th><th>Expense</th><th>Description</th><th>Status</th><th>Invoice</th><th>Actions</th></tr></thead><tbody id="pending-table"></tbody></table>
+    </div>
+    <div class="g-card">
+      <div class="g-card-title"><span>Filing history</span><span style="font-size:10px;color:#6B7280;font-weight:400;">Court-approved items only — click headers to sort</span></div>
+      <table><thead><tr><th onclick="sortHistory('payee')">Payee &#8597;</th><th onclick="sortHistory('atype')">Amt type &#8597;</th><th onclick="sortHistory('amount')">Amount &#8597;</th><th onclick="sortHistory('etype')">Expense &#8597;</th><th>Description</th><th onclick="sortHistory('status')">Status &#8597;</th><th onclick="sortHistory('date')">Date &#8597;</th><th>Invoice</th></tr></thead><tbody id="history-table"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- COURT PANE -->
+<div id="pane-c" class="pane">
+  <div class="c-header">
+    <div><div class="c-title">Franklin County Probate Court — Guardian Expenditure Portal</div><div class="c-sub">Application to Expend Funds — Review &amp; Approval System</div></div>
+    <div style="display:flex;gap:10px;align-items:center;"><span class="live-badge"><span class="dot"></span>Live sync enabled</span><span class="c-user">Magistrate J. Williams</span></div>
+  </div>
+  <div class="c-stats">
+    <div class="cstat cstat-u"><div class="cstat-n" id="stat-new">2</div><div class="cstat-l">New requests</div></div>
+    <div class="cstat"><div class="cstat-n" id="stat-approved">3</div><div class="cstat-l">Approved today</div></div>
+    <div class="cstat"><div class="cstat-n" id="stat-denied">1</div><div class="cstat-l">Denied today</div></div>
+    <div class="cstat cstat-h"><div class="cstat-n" id="stat-hearing">1</div><div class="cstat-l">Set for hearing</div></div>
+    <div class="cstat"><div class="cstat-n">124</div><div class="cstat-l">Active guardianships</div></div>
+    <div class="cstat"><div class="cstat-n">$284,500</div><div class="cstat-l">Approved this month</div></div>
+  </div>
+  <div class="c-page">
+    <div class="c-card">
+      <div class="c-card-title"><span>Incoming expenditure requests</span><span style="font-size:10px;color:#6B7280;font-weight:400;">Click any row to review &amp; take action</span></div>
+      <div class="filter-bar">
+        <span class="fb fb-active" onclick="filterCourt('all',this)">All</span>
+        <span class="fb" onclick="filterCourt('new',this)">New</span>
+        <span class="fb" onclick="filterCourt('approved',this)">Approved</span>
+        <span class="fb" onclick="filterCourt('denied',this)">Denied</span>
+        <span class="fb fb-hearing" onclick="filterCourt('hearing',this)">Set for hearing</span>
+        <span class="fb" onclick="filterCourt('info',this)">Info requested</span>
+      </div>
+      <table><thead><tr><th>Received</th><th>Guardian</th><th>Ward</th><th>Case #</th><th>Payee</th><th>Amount</th><th>Type</th><th>Description</th><th>Status</th></tr></thead><tbody id="court-table"></tbody></table>
+    </div>
+    <div id="detail-panel" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div id="modal-addbill" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">Add new bill <button class="modal-close" onclick="closeModal('modal-addbill')">&#x2715;</button></div>
+    <div class="form-grid">
+      <div><label class="form-label">Expense type</label><label style="font-size:12px;margin-right:10px;"><input type="radio" name="etype" value="One-time" checked> One-time</label><label style="font-size:12px;"><input type="radio" name="etype" value="Budget"> Budget</label></div>
+      <div><label class="form-label">Amount type</label><label style="font-size:12px;margin-right:10px;"><input type="radio" name="atype" value="Exact" checked> Exact</label><label style="font-size:12px;"><input type="radio" name="atype" value="Up To"> Up To</label></div>
+      <div><label class="form-label">Payee</label><input id="new-payee" class="form-input" placeholder="AEP, Nicole LeMire, etc."/></div>
+      <div><label class="form-label">Amount</label><input id="new-amount" class="form-input" placeholder="0.00"/></div>
+      <div class="form-full"><label class="form-label">Description</label><textarea id="new-desc" class="form-input" rows="2" style="resize:none;" placeholder="Description of expense"></textarea></div>
+      <div class="form-full"><label class="form-label">Attach invoice (optional)</label><div style="border:1px dashed #D1D5DB;border-radius:6px;padding:10px;text-align:center;font-size:11px;color:#9CA3AF;">Click or drag to upload — PDF, JPG, PNG up to 10MB (demo only)</div></div>
+    </div>
+    <div class="modal-footer"><button class="btn-outline" onclick="closeModal('modal-addbill')">Cancel</button><button class="btn-green" onclick="saveBill()">Save bill</button></div>
+  </div>
+</div>
+<div id="modal-switchward" class="modal-overlay">
+  <div class="modal" style="width:360px;">
+    <div class="modal-title">Switch ward <button class="modal-close" onclick="closeModal('modal-switchward')">&#x2715;</button></div>
+    <div id="ward-list"></div>
+    <div class="modal-footer"><button class="btn-outline" onclick="closeModal('modal-switchward')">Cancel</button></div>
+  </div>
+</div>
+<div id="modal-addward" class="modal-overlay">
+  <div class="modal" style="width:360px;">
+    <div class="modal-title">Add new ward <button class="modal-close" onclick="closeModal('modal-addward')">&#x2715;</button></div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div><label class="form-label">Ward name (First Last)</label><input id="new-ward-name" class="form-input" placeholder="e.g. John Smith"/></div>
+      <div><label class="form-label">Case number</label><input id="new-ward-case" class="form-input" placeholder="e.g. 123456"/></div>
+    </div>
+    <div class="modal-footer"><button class="btn-outline" onclick="closeModal('modal-addward')">Cancel</button><button class="btn-green" onclick="saveWard()">Create ward</button></div>
+  </div>
+</div>
+<div id="modal-allpending" class="modal-overlay">
+  <div class="modal" style="width:95vw;max-width:900px;">
+    <div class="modal-title">All pending items — across all wards <button class="modal-close" onclick="closeModal('modal-allpending')">&#x2715;</button></div>
+    <table><thead><tr><th>Ward</th><th>Case #</th><th>Payee</th><th>Amount</th><th>Type</th><th>Date added</th><th>Description</th><th>Status</th></tr></thead><tbody id="all-pending-table"></tbody></table>
+    <div class="modal-footer"><button class="btn-outline" onclick="closeModal('modal-allpending')">Close</button></div>
+  </div>
+</div>
+
+<script>
+const today=new Date();
+function fmtDate(d){return(d.getMonth()+1)+'/'+(d.getDate())+'/'+d.getFullYear();}
+function fmtTime(d){let h=d.getHours(),m=d.getMinutes(),a=h>=12?'PM':'AM';h=h%12||12;return h+':'+(m<10?'0'+m:m)+' '+a;}
+function fmt(n){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n);}
+function wardDisplay(n){const p=n.trim().split(' ');return p.length<2?n:p[p.length-1]+', '+p.slice(0,-1).join(' ');}
+
+let currentWard={name:'Jaqueline Heath',caseNum:'637347'};
+let wards=[{name:'Jaqueline Heath',caseNum:'637347'},{name:'Dale Morris',caseNum:'441882'},{name:'Robert Kincaid',caseNum:'558821'}];
+
+// bills: status = pending | filed | approved | denied | hearing | info | paid
+// only 'approved' items appear in Filing History; everything else stays in Pending
+let bills=[
+  {id:1,ward:'Jaqueline Heath',payee:'Nicole LeMire',amount:7810.34,atype:'Exact',etype:'One-time',desc:'Home health aide services — April 2026',date:'4/27/2026',status:'approved',invoice:false},
+  {id:2,ward:'Jaqueline Heath',payee:'Cotter House Worthington',amount:11400.00,atype:'Up To',etype:'Budget',desc:'Monthly housing — March 2026',date:'3/17/2026',status:'approved',invoice:true},
+  {id:3,ward:'Jaqueline Heath',payee:'RLI Surety',amount:92.00,atype:'Exact',etype:'One-time',desc:'Bond renewal fee',date:'3/20/2026',status:'paid',invoice:false},
+  {id:4,ward:'Jaqueline Heath',payee:'SBG LLC',amount:215.00,atype:'Exact',etype:'One-time',desc:'Security deposit — group home placement',date:fmtDate(today),status:'pending',invoice:false},
+  {id:5,ward:'Jaqueline Heath',payee:"Melody's Housesitting",amount:405.00,atype:'Exact',etype:'One-time',desc:'Housesitting services — March 2026',date:fmtDate(today),status:'pending',invoice:false},
+  {id:6,ward:'Jaqueline Heath',payee:'Rejine Lemire',amount:960.93,atype:'Exact',etype:'One-time',desc:'Transportation — medical appointments March',date:'4/23/2026',status:'filed',invoice:false},
+  {id:7,ward:'Dale Morris',payee:'AEP Ohio',amount:187.50,atype:'Exact',etype:'One-time',desc:'Monthly utility — electric',date:'4/28/2026',status:'pending',invoice:false},
+  {id:8,ward:'Robert Kincaid',payee:'CVS Pharmacy',amount:94.20,atype:'Exact',etype:'One-time',desc:'Monthly prescriptions',date:'4/25/2026',status:'pending',invoice:false},
+];
+
+// budget items — static + dynamically added when court approves a Budget-type bill
+let budgetItems=[
+  {id:'b1',ward:'Jaqueline Heath',name:'Cotter House Worthington',desc:'Court-approved monthly housing and residential care facility payment',amount:'Up to $11,400/mo',exp:'03/2027',color:'teal',isNew:false},
+  {id:'b2',ward:'Jaqueline Heath',name:'Ward — Personal Needs',desc:'Monthly personal spending allowance for discretionary expenses',amount:'Up to $500/mo',exp:'02/2027',color:'blue',isNew:false},
+  {id:'b3',ward:'Jaqueline Heath',name:'Truelink Card',desc:'Monthly card management fee for supervised spending account',amount:'Up to $12/mo',exp:'02/2027',color:'purple',isNew:false},
+];
+const colors=['teal','blue','purple','amber'];
+
+let courtRequests=[
+  {id:101,guardian:'Smith & Associates',atty:'R. Smith, Esq.',ward:'Bower, Thomas',caseNum:'512904',payee:'Ohio Home Health',amount:3200.00,atype:'Up To',etype:'Budget',desc:'Monthly in-home care services',received:'04/30/2026 3:41 PM',status:'hearing',hearingDate:'06/15/2026 — 9:00 AM'},
+  {id:102,guardian:'Franklin Trust',atty:'M. Davis, Esq.',ward:'Nguyen, Linda',caseNum:'389201',payee:'Columbus Medical Ctr',amount:1450.00,atype:'Exact',etype:'One-time',desc:'Specialist consultation — neurology',received:'04/29/2026 11:08 AM',status:'info',courtNote:'Please provide documentation of referral from primary physician.'},
+  {id:103,guardian:'Gasper Legal',atty:'C. Gasper, Esq.',ward:'Morris, Dale',caseNum:'441882',payee:'AEP Ohio',amount:187.50,atype:'Exact',etype:'One-time',desc:'Monthly utility — electric',received:'04/28/2026 1:15 PM',status:'approved'},
+  {id:104,guardian:'Gasper Legal',atty:'C. Gasper, Esq.',ward:'Heath, Jaqueline',caseNum:'637347',payee:'SBG LLC',amount:215.00,atype:'Exact',etype:'One-time',desc:'Security deposit — group home placement',received:fmtDate(today)+' 9:14 AM',status:'new'},
+  {id:105,guardian:'Gasper Legal',atty:'C. Gasper, Esq.',ward:'Heath, Jaqueline',caseNum:'637347',payee:"Melody's Housesitting",amount:405.00,atype:'Exact',etype:'One-time',desc:'Housesitting services — March 2026',received:fmtDate(today)+' 9:15 AM',status:'new'},
+];
+
+let nextId=300,courtFilter='all',historySortKey='date',historySortDir=1,selectedCourtId=null;
+
+const STATUS_META={
+  pending:  {cls:'b-pending', label:'Pending',       dot:'#F59E0B'},
+  filed:    {cls:'b-filed',   label:'Filed — awaiting court', dot:'#7C3AED'},
+  approved: {cls:'b-approved',label:'Approved',      dot:'#16A34A'},
+  denied:   {cls:'b-denied',  label:'Denied',        dot:'#DC2626'},
+  hearing:  {cls:'b-hearing', label:'Set for hearing',dot:'#534AB7'},
+  info:     {cls:'b-info',    label:'Info requested', dot:'#2563EB'},
+  paid:     {cls:'b-paid',    label:'Paid',           dot:'#6B7280'},
+};
+const ALL_STATUSES=['pending','filed','approved','denied','hearing','info','paid'];
+
+function sBadge(s,upd,billId){
+  const{cls,label}=STATUS_META[s]||{cls:'b-filed',label:s};
+  const updPill=upd?` <span class="updated-pill">&#9733; Updated</span>`:'';
+  if(billId===undefined) return `<span class="badge ${cls}">${label}</span>${updPill}`;
+  // clickable version
+  const opts=ALL_STATUSES.map(st=>{
+    const sm=STATUS_META[st];
+    return `<div class="status-option${st===s?' current':''}" onclick="changeStatus(${billId},'${st}',event)">
+      <span class="dot-indicator" style="background:${sm.dot};"></span>${sm.label}
+    </div>`;
+  }).join('');
+  return `<div class="status-wrap">
+    <button class="status-btn" onclick="toggleStatusDrop(${billId},event)" title="Click to change status">
+      <span class="badge ${cls}">${label}</span>
+    </button>
+    <div class="status-dropdown" id="sdrop-${billId}">${opts}</div>
+  </div>${updPill}`;
+}
+
+function toggleStatusDrop(billId,e){
+  e.stopPropagation();
+  // close any other open dropdowns
+  document.querySelectorAll('.status-dropdown.open').forEach(d=>{
+    if(d.id!=='sdrop-'+billId) d.classList.remove('open');
+  });
+  document.getElementById('sdrop-'+billId)?.classList.toggle('open');
+}
+
+function changeStatus(billId,newStatus,e){
+  e.stopPropagation();
+  const b=bills.find(x=>x.id===billId);
+  if(!b) return;
+  const oldStatus=b.status;
+  b.status=newStatus;
+  b.updated=false;
+  // if manually set to approved and it's Budget, add to budget items if not already there
+  if(newStatus==='approved'&&b.etype==='Budget'){
+    const already=budgetItems.find(bi=>bi.name===b.payee&&bi.ward===b.ward);
+    if(!already){
+      const colorIdx=budgetItems.filter(bi=>bi.ward===b.ward).length%colors.length;
+      budgetItems.push({id:'b'+nextId++,ward:b.ward,name:b.payee,desc:b.desc,amount:(b.atype==='Up To'?'Up to ':'Exact ')+fmt(b.amount)+'/mo',exp:'',color:colors[colorIdx],isNew:true});
+    }
+  }
+  document.querySelectorAll('.status-dropdown.open').forEach(d=>d.classList.remove('open'));
+  renderGuardian();
+  const{label}=STATUS_META[newStatus]||{label:newStatus};
+  showNotif('Status updated',`${b.payee} changed from ${STATUS_META[oldStatus]?.label||oldStatus} &#8594; ${label}.`,'notif-info');
+}
+
+function renderBudget(){
+  const items=budgetItems.filter(b=>b.ward===currentWard.name);
+  const colorMap={
+    teal:{card:'bcard-teal',name:'teal-d',desc:'teal-m',hr:'teal-b'},
+    blue:{card:'bcard-blue',name:'blue-d',desc:'blue-m',hr:'blue-b'},
+    purple:{card:'bcard-purple',name:'pur-d',desc:'pur-m',hr:'pur-b'},
+    amber:{card:'bcard-amber',name:'amb-d',desc:'amb-m',hr:'amb-b'},
+  };
+  document.getElementById('budget-grid').innerHTML=items.map(item=>{
+    const c=colorMap[item.color]||colorMap.teal;
+    return `<div class="bcard ${c.card}">
+      <div class="bcard-name ${c.name}">${item.name}${item.isNew?` <span class="new-budget-badge">&#9733; NEW</span>`:''}</div>
+      <div class="bcard-desc ${c.desc}">${item.desc}</div>
+      <hr class="bcard-hr ${c.hr}"/>
+      <div class="bcard-meta ${c.name}"><span>${item.amount}</span><span style="font-weight:400;font-size:10px;">${item.exp?'Exp '+item.exp:''}</span></div>
+    </div>`;
+  }).join('')||'<p style="color:#6B7280;font-size:11px;padding:8px;">No budget items yet. Budget items appear here automatically when the court approves a Budget-type bill.</p>';
+}
+
+function renderGuardian(){
+  const wb=bills.filter(b=>b.ward===currentWard.name);
+  // PENDING section: everything NOT approved/paid
+  const pending=wb.filter(b=>b.status!=='approved'&&b.status!=='paid');
+  // HISTORY section: only approved and paid
+  const history=wb.filter(b=>b.status==='approved'||b.status==='paid');
+  history.sort((a,b)=>{let av=a[historySortKey],bv=b[historySortKey];if(historySortKey==='amount'){av=+av;bv=+bv;}return av<bv?-historySortDir:av>bv?historySortDir:0;});
+
+  let pt='';
+  pending.forEach(b=>{
+    const rowClass={filed:'filed-row',denied:'denied-row',hearing:'hearing-row-g',info:'info-row'}[b.status]||'';
+    const canSend=b.status==='pending';
+    let extra='';
+    if(b.status==='hearing'&&b.hearingDate) extra+=`<div class="hearing-date-cell">&#128197; Hearing: ${b.hearingDate}</div>`;
+    if(b.courtNote) extra+=`<div class="court-note">Court: ${b.courtNote}</div>`;
+    pt+=`<tr id="grow-${b.id}" class="${rowClass}">
+      <td><input type="checkbox" class="pcheck" data-id="${b.id}"${!canSend?' disabled title="Already submitted"':''}></td>
+      <td><strong>${b.payee}</strong></td><td>${fmt(b.amount)}</td><td>${b.atype}</td><td>${b.date}</td><td>${b.etype}</td>
+      <td class="desc-c">${b.desc}</td>
+      <td>${sBadge(b.status,b.updated,b.id)}${extra}</td>
+      <td>${b.invoice?'&#128206;':'N/A'}</td>
+      <td><button class="act-btn" onclick="deleteBill(${b.id})" title="Delete">del</button></td>
+    </tr>`;
+  });
+
+  let ht='';
+  history.forEach(b=>{
+    const note=b.courtNote?`<div class="court-note">Court: ${b.courtNote}</div>`:'';
+    ht+=`<tr id="grow-${b.id}"><td><strong>${b.payee}</strong></td><td>${b.atype}</td><td>${fmt(b.amount)}</td><td>${b.etype}</td><td class="desc-c">${b.desc}${note}</td><td>${sBadge(b.status,b.updated,b.id)}</td><td>${b.date}</td><td>${b.invoice?'&#128206;':'N/A'}</td></tr>`;
+  });
+
+  document.getElementById('pending-table').innerHTML=pt||'<tr><td colspan="10" style="text-align:center;color:#6B7280;padding:14px;">No pending bills. Click <strong>+ Add New Bill</strong> to get started.</td></tr>';
+  document.getElementById('history-table').innerHTML=ht||'<tr><td colspan="8" style="text-align:center;color:#6B7280;padding:14px;">No court-approved items yet.</td></tr>';
+
+  const allP=bills.filter(b=>b.status==='pending');
+  document.getElementById('pending-badge').textContent=pending.length+' items';
+  document.getElementById('all-pending-count').textContent=allP.length;
+  document.getElementById('ward-display-name').textContent=wardDisplay(currentWard.name);
+  document.getElementById('ward-display-case').textContent='Case #: '+currentWard.caseNum;
+  renderBudget();
+}
+
+function renderCourt(){
+  let filtered=courtFilter==='all'?courtRequests:courtRequests.filter(r=>r.status===courtFilter);
+  const newCount=courtRequests.filter(r=>r.status==='new').length;
+  document.getElementById('stat-new').textContent=newCount;
+  document.getElementById('stat-hearing').textContent=courtRequests.filter(r=>r.status==='hearing').length;
+  document.getElementById('court-badge').textContent=newCount+' new';
+  let html='';
+  filtered.forEach(r=>{
+    const isNew=r.status==='new',isHearing=r.status==='hearing',isSel=r.id===selectedCourtId;
+    const rc=(isSel?'selected-row ':isNew?'c-new-row ':isHearing?'c-hearing-row ':'')+'clickable-row';
+    const extra=r.status==='hearing'&&r.hearingDate?`<div style="font-size:9px;color:#534AB7;margin-top:2px;">&#128197; ${r.hearingDate}</div>`:'';
+    html+=`<tr id="crow-${r.id}" class="${rc}" onclick="selectCourtRow(${r.id})">
+      <td style="font-size:10px;color:#6B7280;white-space:nowrap;">${r.received}</td>
+      <td><div class="g-cell">${r.guardian}</div><div class="g-sub">${r.atty}</div></td>
+      <td style="white-space:nowrap;">${r.ward}</td><td style="font-size:10px;">${r.caseNum}</td>
+      <td><strong>${r.payee}</strong></td><td style="font-weight:700;">${fmt(r.amount)}</td>
+      <td>${r.atype} / ${r.etype}</td><td class="desc-c">${r.desc}</td>
+      <td>${sBadge(r.status==='new'?'new':r.status)}${extra}</td>
+    </tr>`;
+  });
+  document.getElementById('court-table').innerHTML=html||'<tr><td colspan="9" style="text-align:center;color:#6B7280;padding:14px;">No requests matching this filter.</td></tr>';
+}
+
+function selectCourtRow(id){
+  selectedCourtId=id;
+  renderCourt();
+  renderDetailPanel(id);
+  setTimeout(()=>document.getElementById('detail-panel').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+}
+
+function renderDetailPanel(id){
+  const r=courtRequests.find(x=>x.id===id);
+  const dp=document.getElementById('detail-panel');
+  if(!r){dp.style.display='none';return;}
+  dp.style.display='block';
+  const done=r.status==='approved'||r.status==='denied';
+  const actionHTML=done?
+    `<div class="completed-notice">${r.status==='approved'?'&#9989;':'&#10060;'} This request was <strong>${r.status}</strong>.${r.courtNote?` Note sent: &ldquo;${r.courtNote}&rdquo;`:''}</div>`:
+    `<button class="big-approve" onclick="courtAction(${r.id},'approved')">&#9989; Approve</button>
+     <button class="big-deny" onclick="courtAction(${r.id},'denied')">&#10060; Deny</button>
+     <button class="big-hearing" onclick="courtAction(${r.id},'hearing')">&#128197; Set for hearing</button>
+     <button class="big-info" onclick="courtAction(${r.id},'info')">&#8505; Need info</button>`;
+  dp.innerHTML=`<div class="detail-panel-wrap">
+    <div class="detail-header">
+      <div><div class="detail-ward">${r.ward} &mdash; Case #${r.caseNum}</div><div class="detail-sub">${r.guardian} &nbsp;|&nbsp; ${r.atty} &nbsp;|&nbsp; Received: ${r.received}</div></div>
+      <button class="detail-close" onclick="closeDetailPanel()">&#x2715;</button>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-label">Payee</div><div class="detail-value">${r.payee}</div></div>
+      <div class="detail-item"><div class="detail-label">Amount</div><div class="detail-value">${fmt(r.amount)} (${r.atype})</div></div>
+      <div class="detail-item"><div class="detail-label">Expense type</div><div class="detail-value">${r.etype}</div></div>
+      <div class="detail-item detail-desc"><div class="detail-label">Description</div><div class="detail-value">${r.desc}</div></div>
+    </div>
+    <div class="detail-actions-row">
+      ${actionHTML}
+      ${!done?`<div class="note-area"><textarea id="court-note-input" class="note-input" rows="2" placeholder="Add note to guardian — sent automatically with your decision (optional)...">${r.courtNote||''}</textarea></div>`:''}
+    </div>
+    ${!done?`<div class="hearing-date-row"><label style="font-size:11px;color:#534AB7;font-weight:600;">If setting for hearing:</label><input id="hearing-date-input" class="hearing-date-input" value="06/12/2026 &mdash; 9:00 AM"/><span class="hearing-hint">Guardian notified automatically</span></div>`:''}
+  </div>`;
+}
+
+function closeDetailPanel(){selectedCourtId=null;document.getElementById('detail-panel').style.display='none';renderCourt();}
+
+function courtAction(id,newStatus){
+  const req=courtRequests.find(r=>r.id===id);if(!req) return;
+  const note=(document.getElementById('court-note-input')||{}).value||'';
+  const hDate=(document.getElementById('hearing-date-input')||{}).value||'06/12/2026 — 9:00 AM';
+  req.status=newStatus;
+  if(note) req.courtNote=note;
+  if(newStatus==='hearing') req.hearingDate=hDate;
+
+  const matchBill=bills.find(b=>b.payee===req.payee&&Math.abs(b.amount-req.amount)<0.01);
+  if(matchBill){
+    if(newStatus==='approved'){
+      // ONLY on approve: move to Filing History
+      matchBill.status='approved';
+      matchBill.updated=true;
+      if(note) matchBill.courtNote=note;
+      // if Budget type, also add to budget items
+      if(req.etype==='Budget'){
+        const colorIdx=budgetItems.filter(b=>b.ward===matchBill.ward).length%colors.length;
+        budgetItems.push({
+          id:'b'+nextId++,
+          ward:matchBill.ward,
+          name:matchBill.payee,
+          desc:matchBill.desc,
+          amount:(matchBill.atype==='Up To'?'Up to ':'Exact ')+fmt(matchBill.amount)+'/mo',
+          exp:'',
+          color:colors[colorIdx],
+          isNew:true
+        });
+      }
+    } else if(newStatus==='denied'){
+      // stays in Pending with denied status
+      matchBill.status='denied';matchBill.updated=true;if(note) matchBill.courtNote=note;
+    } else if(newStatus==='hearing'){
+      // stays in Pending with hearing status
+      matchBill.status='hearing';matchBill.hearingDate=hDate;matchBill.updated=true;if(note) matchBill.courtNote=note;
+    } else if(newStatus==='info'){
+      // stays in Pending with info status
+      matchBill.status='info';matchBill.updated=true;if(note) matchBill.courtNote=note;
+    }
+  }
+
+  const msgs={
+    approved:{t:'&#9989; Approved by the court!',m:req.etype==='Budget'?`${req.payee} approved and added to Budget Items + Filing History.`:`${req.payee} (${fmt(req.amount)}) approved. Now in Filing History.`,c:'notif-approve'},
+    denied:{t:'&#10060; Request denied',m:`${req.payee} denied${note?' — Court note: "'+note+'"':''}.  Still visible in Pending Application.`,c:'notif-deny'},
+    hearing:{t:'&#128197; Set for hearing',m:`${req.payee} set for hearing on ${hDate}. Status updated in Pending Application.`,c:'notif-hearing'},
+    info:{t:'&#8505; Information requested',m:`Court needs more info on ${req.payee}${note?': "'+note+'"':''}.`,c:'notif-info'},
+  };
+
+  renderDetailPanel(id);renderCourt();renderGuardian();
+  const m=msgs[newStatus];if(m) showNotif(m.t,m.m,m.c);
+
+  setTimeout(()=>{
+    showTab('g');
+    if(matchBill){
+      const el=document.getElementById('grow-'+matchBill.id);
+      if(el){el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+    }
+  },800);
+}
+
+function showNotif(title,msg,cls){
+  const n=document.getElementById('notif');
+  n.className='notif show '+cls;
+  n.innerHTML=`<div class="notif-title">${title}</div><div style="margin-top:3px;">${msg}</div>`;
+  clearTimeout(window._nt);window._nt=setTimeout(()=>{n.className='notif';},6000);
+}
+
+function sendToCourt(){
+  const checked=[...document.querySelectorAll('.pcheck:checked')].map(c=>+c.dataset.id);
+  if(!checked.length){showNotif('&#8505; Nothing selected','Check the boxes next to pending bills to send.','notif-info');return;}
+  let sent=0;
+  checked.forEach(id=>{
+    const b=bills.find(x=>x.id===id);if(!b||b.status!=='pending') return;
+    b.status='filed';b.updated=false;
+    courtRequests.unshift({id:nextId++,guardian:'Gasper Legal',atty:'C. Gasper, Esq.',ward:wardDisplay(b.ward),caseNum:currentWard.caseNum,payee:b.payee,amount:b.amount,atype:b.atype,etype:b.etype,desc:b.desc,received:fmtDate(today)+' '+fmtTime(today),status:'new'});
+    sent++;
+  });
+  if(!sent){showNotif('&#8505; Nothing to send','Only items with Pending status can be sent.','notif-info');return;}
+  renderGuardian();renderCourt();
+  showNotif('&#128228; Sent to court!',`${sent} item(s) submitted. Status updated to "Filed — awaiting court".`,'notif-approve');
+}
+
+function deleteBill(id){if(!confirm('Delete this bill?')) return;bills=bills.filter(b=>b.id!==id);renderGuardian();}
+function sortHistory(k){historySortDir=historySortKey===k?-historySortDir:1;historySortKey=k;renderGuardian();}
+function filterCourt(f,el){courtFilter=f;document.querySelectorAll('.fb').forEach(b=>b.classList.remove('fb-active'));el.classList.add('fb-active');renderCourt();}
+function showTab(t){
+  document.getElementById('pane-g').classList.toggle('active',t==='g');
+  document.getElementById('pane-c').classList.toggle('active',t==='c');
+  document.getElementById('tab-g').className='tab'+(t==='g'?' active-guardian':'');
+  document.getElementById('tab-c').className='tab'+(t==='c'?' active-court':'');
+}
+function openAddBill(){document.getElementById('modal-addbill').classList.add('open');setTimeout(()=>document.getElementById('new-payee').focus(),100);}
+function openSwitchWard(){
+  document.getElementById('ward-list').innerHTML=[...wards].sort((a,b)=>a.name.split(' ').pop().localeCompare(b.name.split(' ').pop())).map(w=>`<div class="ward-option ${w.name===currentWard.name?'current':''}" onclick="switchWard('${w.name}','${w.caseNum}')"><span><strong>${wardDisplay(w.name)}</strong><br/><span style="font-size:10px;color:#6B7280;">Case #: ${w.caseNum}</span></span>${w.name===currentWard.name?'<span style="color:#1D9E75;font-size:11px;font-weight:700;">&#9679; Current</span>':''}</div>`).join('');
+  document.getElementById('modal-switchward').classList.add('open');
+}
+function openAddWard(){document.getElementById('modal-addward').classList.add('open');setTimeout(()=>document.getElementById('new-ward-name').focus(),100);}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function switchWard(name,caseNum){currentWard={name,caseNum};closeModal('modal-switchward');renderGuardian();showNotif('Ward switched','Now viewing: '+wardDisplay(name)+' (Case #'+caseNum+')','notif-info');}
+function saveWard(){
+  const name=document.getElementById('new-ward-name').value.trim(),cn=document.getElementById('new-ward-case').value.trim();
+  if(!name||!cn){showNotif('&#8505; Missing info','Please enter a ward name and case number.','notif-info');return;}
+  wards.push({name,caseNum:cn});currentWard={name,caseNum:cn};closeModal('modal-addward');renderGuardian();
+  showNotif('&#9989; Ward created!',wardDisplay(name)+' added successfully.','notif-approve');
+}
+function saveBill(){
+  const payee=document.getElementById('new-payee').value.trim();
+  const amount=parseFloat(document.getElementById('new-amount').value.replace(/[^0-9.]/g,''));
+  const desc=document.getElementById('new-desc').value.trim();
+  const etype=document.querySelector('input[name="etype"]:checked').value;
+  const atype=document.querySelector('input[name="atype"]:checked').value;
+  if(!payee||isNaN(amount)||amount<=0){showNotif('&#8505; Missing info','Please enter a payee and a valid amount.','notif-info');return;}
+  bills.push({id:nextId++,ward:currentWard.name,payee,amount,atype,etype,desc:desc||'—',date:fmtDate(today),status:'pending',invoice:false});
+  closeModal('modal-addbill');renderGuardian();
+  showNotif('&#9989; Bill added!',payee+' — '+fmt(amount)+' added to pending.','notif-approve');
+}
+function showAllPending(){
+  const allP=bills.filter(b=>b.status!=='approved'&&b.status!=='paid');
+  document.getElementById('all-pending-table').innerHTML=allP.length?allP.map(b=>`<tr><td>${wardDisplay(b.ward)}</td><td style="font-size:10px;">${wards.find(w=>w.name===b.ward)?.caseNum||'—'}</td><td><strong>${b.payee}</strong></td><td>${fmt(b.amount)}</td><td>${b.atype} / ${b.etype}</td><td>${b.date}</td><td class="desc-c">${b.desc}</td><td>${sBadge(b.status)}</td></tr>`).join(''):'<tr><td colspan="8" style="text-align:center;color:#6B7280;padding:14px;">No pending items.</td></tr>';
+  document.getElementById('modal-allpending').classList.add('open');
+}
+document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o) o.classList.remove('open');});});
+document.addEventListener('click',()=>document.querySelectorAll('.status-dropdown.open').forEach(d=>d.classList.remove('open')));
+renderGuardian();renderCourt();
+</script>
+</body>
+</html>
