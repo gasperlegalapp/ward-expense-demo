@@ -337,11 +337,30 @@ tr:hover td{background:#FAFAFA;}
       </div>
     </div>
     <div class="c-card">
-      <div class="c-card-title"><span>Court filing history</span><span style="font-size:10px;color:#6B7280;font-weight:400;">Resolved requests — approved &amp; denied</span></div>
-      <table>
-        <thead><tr><th>Resolved</th><th>Guardian</th><th>Ward</th><th>Case #</th><th>Payee</th><th>Amount</th><th>Description</th><th>Decision</th><th>Note</th></tr></thead>
-        <tbody id="court-history-table"></tbody>
-      </table>
+      <div class="c-card-title">
+        <span>Court filing history</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input id="history-search" class="form-input" style="width:200px;padding:4px 8px;font-size:11px;" placeholder="&#128269; Search ward, payee, guardian..." oninput="historySearch=this.value;renderCourt()"/>
+          <select id="history-days" class="form-input" style="width:150px;padding:4px 8px;font-size:11px;" onchange="historyDays=+this.value;renderCourt()">
+            <option value="7">Past 7 days</option>
+            <option value="30" selected>Past 30 days</option>
+            <option value="60">Past 60 days</option>
+            <option value="90">Past 90 days</option>
+            <option value="365">This year (2026)</option>
+            <option value="730">Last 2 years</option>
+            <option value="9999">All time</option>
+          </select>
+          <span id="history-count" style="font-size:10px;color:#6B7280;white-space:nowrap;"></span>
+        </div>
+      </div>
+      <div style="max-height:360px;overflow-y:auto;">
+        <table>
+          <thead><tr style="position:sticky;top:0;background:#F8FAFC;z-index:5;">
+            <th>Resolved</th><th>Guardian</th><th>Ward</th><th>Case #</th><th>Payee</th><th>Amount</th><th>Description</th><th>Decision</th><th>Note</th>
+          </tr></thead>
+          <tbody id="court-history-table"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -583,9 +602,22 @@ let courtRequests=[
   {id:110,guardian:'Smith & Associates',atty:'R. Smith, Esq.',ward:'Jenkins, Earl',caseNum:'534892',payee:'Walgreens',amount:142.00,atype:'Exact',etype:'One-time',desc:'Monthly medications — April',received:'04/23/2026 3:00 PM',status:'approved',resolvedDate:'04/24/2026'},
   {id:111,guardian:'Gasper Legal',atty:'C. Gasper, Esq.',ward:'Simmons, Dorothy',caseNum:'612904',payee:'Columbus Eye Associates',amount:450.00,atype:'Exact',etype:'One-time',desc:'Cataract surgery consultation',received:'04/18/2026 9:00 AM',status:'new'},
   {id:112,guardian:'Harmon & Burke',atty:'S. Harmon, Esq.',ward:'Fletcher, Donald',caseNum:'445601',payee:'Sunrise Memory Care',amount:6200.00,atype:'Up To',etype:'Budget',desc:'Monthly memory care facility',received:'04/17/2026 1:00 PM',status:'denied',resolvedDate:'04/20/2026',courtNote:'Exceeds approved budget ceiling. Resubmit with revised amount.'},
+  {id:113,guardian:'Gasper Legal',atty:'C. Gasper, Esq.',ward:'Morris, Dale',caseNum:'441882',payee:'Columbia Gas',amount:142.00,atype:'Exact',etype:'One-time',desc:'Monthly gas utility',received:'04/10/2026 9:00 AM',status:'approved',resolvedDate:'04/11/2026'},
+  {id:114,guardian:'Smith & Associates',atty:'R. Smith, Esq.',ward:'Jenkins, Earl',caseNum:'534892',payee:'ProMedica Lab',amount:380.00,atype:'Exact',etype:'One-time',desc:'Blood work and diagnostics',received:'04/05/2026 11:00 AM',status:'approved',resolvedDate:'04/07/2026'},
+  {id:115,guardian:'Franklin Trust',atty:'M. Davis, Esq.',ward:'Nguyen, Linda',caseNum:'389201',payee:'Riverside PT',amount:900.00,atype:'Up To',etype:'One-time',desc:'Physical therapy — 6 sessions',received:'03/28/2026 2:00 PM',status:'approved',resolvedDate:'03/30/2026'},
+  {id:116,guardian:'Harmon & Burke',atty:'S. Harmon, Esq.',ward:'Yates, Beverly',caseNum:'498201',payee:'Aetna Insurance',amount:310.00,atype:'Exact',etype:'One-time',desc:'Supplemental insurance premium',received:'03/20/2026 10:00 AM',status:'approved',resolvedDate:'03/22/2026'},
+  {id:117,guardian:'Gasper Legal',atty:'C. Gasper, Esq.',ward:'Kincaid, Robert',caseNum:'558821',payee:'CVS Pharmacy',amount:94.20,atype:'Exact',etype:'One-time',desc:'Monthly prescriptions — March',received:'03/15/2026 9:30 AM',status:'approved',resolvedDate:'03/16/2026'},
+  {id:118,guardian:'Westside Guardian',atty:'T. Wallace, Esq.',ward:'Cruz, Maria',caseNum:'567234',payee:'Dental Care Plus',amount:520.00,atype:'Exact',etype:'One-time',desc:'Dental cleaning and fillings',received:'03/10/2026 1:00 PM',status:'denied',resolvedDate:'03/12/2026',courtNote:'Documentation of dental necessity required.'},
+  {id:119,guardian:'Franklin Trust',atty:'M. Davis, Esq.',ward:'Greene, Harold',caseNum:'411902',payee:'Home Depot',amount:840.00,atype:'Exact',etype:'One-time',desc:'Wheelchair ramp installation',received:'03/05/2026 11:00 AM',status:'approved',resolvedDate:'03/06/2026'},
+  {id:120,guardian:'Smith & Associates',atty:'R. Smith, Esq.',ward:'Bower, Thomas',caseNum:'512904',payee:'Kindred Hospice',amount:3800.00,atype:'Up To',etype:'Budget',desc:'Monthly hospice services',received:'02/20/2026 9:00 AM',status:'approved',resolvedDate:'02/22/2026'},
+  {id:121,guardian:'Gasper Legal',atty:'C. Gasper, Esq.',ward:'Kowalski, Margaret',caseNum:'637347',payee:'Visiting Angels',amount:2100.00,atype:'Up To',etype:'Budget',desc:'Monthly in-home care — February',received:'02/10/2026 10:00 AM',status:'approved',resolvedDate:'02/12/2026'},
+  {id:122,guardian:'Harmon & Burke',atty:'S. Harmon, Esq.',ward:'Patterson, Charles',caseNum:'502341',payee:'Ohio ENT Specialists',amount:670.00,atype:'Exact',etype:'One-time',desc:'Hearing aids and fitting',received:'02/05/2026 2:30 PM',status:'approved',resolvedDate:'02/07/2026'},
+  {id:123,guardian:'Westside Guardian',atty:'T. Wallace, Esq.',ward:'Cruz, Maria',caseNum:'567234',payee:'Columbus Transit',amount:180.00,atype:'Exact',etype:'One-time',desc:'Monthly medical transport pass',received:'01/28/2026 9:00 AM',status:'approved',resolvedDate:'01/29/2026'},
+  {id:124,guardian:'Franklin Trust',atty:'M. Davis, Esq.',ward:'Nguyen, Linda',caseNum:'389201',payee:'Luxe Memory Care',amount:5900.00,atype:'Up To',etype:'Budget',desc:'Monthly memory care placement',received:'01/15/2026 11:00 AM',status:'denied',resolvedDate:'01/18/2026',courtNote:'Facility not on approved provider list.'},
+  {id:125,guardian:'Gasper Legal',atty:'C. Gasper, Esq.',ward:'Morris, Dale',caseNum:'441882',payee:'AEP Ohio',amount:187.50,atype:'Exact',etype:'One-time',desc:'Monthly utility — January',received:'01/08/2026 9:00 AM',status:'approved',resolvedDate:'01/09/2026'},
 ];
 
-let nextId=300,courtFilter='all',historySortKey='date',historySortDir=1,selectedCourtId=null;
+let nextId=300,courtFilter='all',historySortKey='date',historySortDir=1,selectedCourtId=null,historySearch='',historyDays=30;
 
 const STATUS_META={
   pending:{cls:'b-pending',label:'Pending',dot:'#F59E0B'},
@@ -820,7 +852,8 @@ function renderCourt(){
   filtered.forEach(r=>{
     const isNew=r.status==='new',isHearing=r.status==='hearing',isSel=r.id===selectedCourtId;
     const rc=(isSel?'selected-row ':isNew?'c-new-row ':isHearing?'c-hearing-row ':'')+'clickable-row';
-    const sm=STATUS_META[r.status==='new'?'filed':r.status]||{cls:'b-filed',label:r.status};
+    const courtDisplayStatus=r.status==='new'?'new':r.status;
+    const sm=STATUS_META[courtDisplayStatus]||{cls:'b-filed',label:r.status};
     const extra=r.status==='hearing'&&r.hearingDate?`<div style="font-size:9px;color:#534AB7;">&#128197; ${r.hearingDate}</div>`:'';
     html+=`<tr id="crow-${r.id}" class="${rc}" onclick="selectCourtRow(${r.id})">
       <td style="font-size:10px;color:#6B7280;white-space:nowrap;">${r.received}</td>
@@ -838,20 +871,41 @@ function renderCourt(){
   document.getElementById('court-table').innerHTML=html||'<tr><td colspan="9" class="no-items-msg">No active requests matching this filter.</td></tr>';
   if(selectedCourtId) populateInlineDetail(selectedCourtId);
 
+  // apply date filter
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-historyDays);
+  const q=(historySearch||'').toLowerCase().trim();
+  const filteredResolved=resolved.filter(r=>{
+    // date filter
+    if(historyDays<9999&&r.resolvedDate){
+      const p=r.resolvedDate.split('/');
+      if(p.length===3){const d=new Date(+p[2],+p[0]-1,+p[1]);if(d<cutoff) return false;}
+    }
+    // search filter
+    if(q){
+      const searchable=(r.ward+' '+r.payee+' '+r.guardian+' '+r.caseNum+' '+r.desc+' '+(r.courtNote||'')).toLowerCase();
+      if(!searchable.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // update count label
+  const countEl=document.getElementById('history-count');
+  if(countEl) countEl.textContent=filteredResolved.length+' of '+resolved.length+' records';
+
   let cht='';
-  resolved.forEach(r=>{
+  filteredResolved.forEach(r=>{
     const sm=STATUS_META[r.status]||{cls:'b-filed',label:r.status};
     cht+=`<tr class="${r.status==='approved'?'c-approved-row':'c-denied-row'}">
-      <td style="font-size:10px;color:#6B7280;">${r.resolvedDate||'—'}</td>
+      <td style="font-size:10px;color:#6B7280;white-space:nowrap;">${r.resolvedDate||'—'}</td>
       <td><div class="g-cell">${r.guardian}</div><div class="g-sub">${r.atty||''}</div></td>
-      <td>${r.ward}</td><td style="font-size:10px;">${r.caseNum}</td>
+      <td style="white-space:nowrap;">${r.ward}</td><td style="font-size:10px;">${r.caseNum}</td>
       <td><strong>${r.payee}</strong></td><td style="font-weight:700;">${fmt(r.amount)}</td>
       <td class="desc-c">${r.desc}</td>
       <td><span class="badge ${sm.cls}">${sm.label}</span></td>
       <td style="font-size:10px;color:#6B7280;font-style:italic;">${r.courtNote||'—'}</td>
     </tr>`;
   });
-  document.getElementById('court-history-table').innerHTML=cht||'<tr><td colspan="9" class="no-items-msg">No resolved requests yet.</td></tr>';
+  document.getElementById('court-history-table').innerHTML=cht||`<tr><td colspan="9" class="no-items-msg">No records match your search${q?' for "'+q+'"':''}.</td></tr>`;
 }
 
 function selectCourtRow(id){
