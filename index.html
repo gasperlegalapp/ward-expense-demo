@@ -476,6 +476,40 @@ tr:hover td{background:#FAFAFA;}
   </div>
 </div>
 
+<!-- EDIT BILL MODAL -->
+<div id="modal-editbill" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">Edit bill <button class="modal-close" onclick="closeModal('modal-editbill')">&#x2715;</button></div>
+    <input type="hidden" id="edit-bill-id"/>
+    <div class="form-grid">
+      <div>
+        <label class="form-label">Expense type</label>
+        <label style="font-size:12px;margin-right:12px;"><input type="radio" name="edit-etype" value="oneTime" onchange="toggleEditExpiryField()"> One-time</label>
+        <label style="font-size:12px;"><input type="radio" name="edit-etype" value="budget" onchange="toggleEditExpiryField()"> Budget</label>
+      </div>
+      <div>
+        <label class="form-label">Amount type</label>
+        <label style="font-size:12px;margin-right:12px;"><input type="radio" name="edit-atype" value="exact"> Exact</label>
+        <label style="font-size:12px;"><input type="radio" name="edit-atype" value="upTo"> Up To</label>
+      </div>
+      <div><label class="form-label">Payee</label><input id="edit-payee" class="form-input" placeholder="AEP, Nicole LeMire, etc."/></div>
+      <div><label class="form-label">Amount</label><input id="edit-amount" class="form-input" placeholder="0.00" type="number" step="0.01"/></div>
+      <div class="form-full"><label class="form-label">Description</label><textarea id="edit-desc" class="form-input" rows="2" style="resize:none;"></textarea></div>
+      <div class="form-full" id="edit-expiry-row" style="display:none;">
+        <label class="form-label">Expiration date — MM/DD/YYYY</label>
+        <input id="edit-expiry" class="form-input" placeholder="e.g. 03/17/2027" maxlength="10"/>
+      </div>
+    </div>
+    <div style="background:#FFF9C4;border:1px solid #F5D87A;border-radius:6px;padding:8px 10px;font-size:11px;color:#633806;margin-top:10px;">
+      &#9998; Editing this item will reset its status to <strong>Pending</strong> and log the change in its history.
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal('modal-editbill')">Cancel</button>
+      <button class="btn-green" onclick="saveEditBill()">Save changes</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const today=new Date();
 function fmtDate(d){return(d.getMonth()+1)+'/'+(d.getDate())+'/'+d.getFullYear();}
@@ -650,8 +684,9 @@ function renderGuardian(){
       <td>${sBadge(b.status,b.updated,b.id)}${extra}</td>
       <td>${b.invoice?'&#128206;':'N/A'}</td>
       <td>
-        <button class="hist-btn" onclick="showItemHistory(${b.id})">&#128203;</button>
-        <button class="act-btn" onclick="deletePendingBill(${b.id})">del</button>
+        <button class="hist-btn" onclick="showItemHistory(${b.id})" title="View history">&#128203;</button>
+        <button class="act-btn" style="color:#0C447C;border-color:#B5D4F4;" onclick="openEditBill(${b.id})" title="Edit">&#9998; edit</button>
+        <button class="act-btn" onclick="deletePendingBill(${b.id})" title="Delete">del</button>
       </td>
     </tr>`;
   });
@@ -676,6 +711,90 @@ function renderGuardian(){
   document.getElementById('ward-display-name').textContent=wardDisplay(currentWard.name);
   document.getElementById('ward-display-case').textContent='Case #: '+currentWard.caseNum;
   renderBudget();
+}
+
+function openEditBill(id){
+  const b=bills.find(x=>x.id===id);if(!b) return;
+  document.getElementById('edit-bill-id').value=id;
+  document.getElementById('edit-payee').value=b.payee;
+  document.getElementById('edit-amount').value=b.amount;
+  document.getElementById('edit-desc').value=b.desc;
+  // set expense type radio
+  document.querySelectorAll('input[name="edit-etype"]').forEach(r=>{r.checked=r.value===b.etype;});
+  // set amount type radio
+  document.querySelectorAll('input[name="edit-atype"]').forEach(r=>{r.checked=r.value===b.atype;});
+  // set expiry if budget
+  const expiryRow=document.getElementById('edit-expiry-row');
+  if(b.etype==='budget'){
+    expiryRow.style.display='block';
+    // find matching budget item for expiry date
+    const bi=budgetItems.find(x=>x.name===b.payee&&x.ward===b.ward);
+    document.getElementById('edit-expiry').value=bi?.expDate||'';
+  } else {
+    expiryRow.style.display='none';
+    document.getElementById('edit-expiry').value='';
+  }
+  document.getElementById('modal-editbill').classList.add('open');
+  setTimeout(()=>document.getElementById('edit-payee').focus(),100);
+}
+
+function toggleEditExpiryField(){
+  const isBudget=document.querySelector('input[name="edit-etype"]:checked')?.value==='budget';
+  document.getElementById('edit-expiry-row').style.display=isBudget?'block':'none';
+}
+
+function saveEditBill(){
+  const id=parseInt(document.getElementById('edit-bill-id').value);
+  const b=bills.find(x=>x.id===id);if(!b) return;
+  const payee=document.getElementById('edit-payee').value.trim();
+  const amount=parseFloat(document.getElementById('edit-amount').value);
+  const desc=document.getElementById('edit-desc').value.trim();
+  const etype=document.querySelector('input[name="edit-etype"]:checked').value;
+  const atype=document.querySelector('input[name="edit-atype"]:checked').value;
+  const expiry=document.getElementById('edit-expiry')?.value.trim()||'';
+
+  if(!payee||isNaN(amount)||amount<=0||!desc){
+    showNotif('&#8505; Missing info','Please fill in payee, amount, and description.','notif-warn');return;
+  }
+  if(etype==='budget'){
+    if(!expiry){showNotif('&#8505; Expiration required','Budget items need an expiration date (MM/DD/YYYY).','notif-warn');return;}
+    const p=expiry.split('/');if(p.length!==3||p[2].length!==4){showNotif('&#8505; Invalid date','Use MM/DD/YYYY — e.g. 03/17/2027','notif-warn');return;}
+  }
+
+  // track what changed for history note
+  const changes=[];
+  if(b.payee!==payee) changes.push(`Payee: "${b.payee}" → "${payee}"`);
+  if(b.amount!==amount) changes.push(`Amount: ${fmt(b.amount)} → ${fmt(amount)}`);
+  if(b.desc!==desc) changes.push('Description updated');
+  if(b.etype!==etype) changes.push(`Type: ${b.etype} → ${etype}`);
+  if(b.atype!==atype) changes.push(`Amount type: ${b.atype} → ${atype}`);
+
+  // apply changes
+  const oldPayee=b.payee;
+  b.payee=payee;b.amount=amount;b.desc=desc;b.etype=etype;b.atype=atype;
+  b.status='pending';b.updated=false;b.courtNote=null;
+
+  // log in history
+  if(!b.history)b.history=[];
+  b.history.push({
+    status:'pending',
+    date:fmtDate(today),
+    note:changes.length>0?'Edited: '+changes.join('; '):'Bill edited — reset to pending'
+  });
+
+  // update matching budget item if etype is budget
+  if(etype==='budget'){
+    const bi=budgetItems.find(x=>x.name===oldPayee&&x.ward===b.ward);
+    if(bi){bi.name=payee;bi.desc=desc;bi.amount=(atype==='upTo'?'Up to ':'Exact ')+fmt(amount)+'/mo';bi.expDate=expiry;}
+    else{
+      const ci=budgetItems.filter(x=>x.ward===b.ward).length%colors.length;
+      budgetItems.push({id:'b'+nextId++,ward:b.ward,name:payee,desc,amount:(atype==='upTo'?'Up to ':'Exact ')+fmt(amount)+'/mo',expDate:expiry,color:colors[ci],isNew:true});
+    }
+  }
+
+  closeModal('modal-editbill');
+  renderGuardian();
+  showNotif('&#9998; Bill updated',`${payee} has been updated and reset to Pending.`,'notif-approve');
 }
 
 function deletePendingBill(id){
